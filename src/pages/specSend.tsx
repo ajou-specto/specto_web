@@ -23,8 +23,11 @@ interface SpecBase {
 export default function SpecSend() {
   const searchParams = useSearchParams();
   const specPostReq = searchParams?.get("specPostReq");
-  const fileBase64 = searchParams?.get("fileBase64") ?? "";
+  // const fileBase64 = searchParams?.get("fileBase64") ?? "";
+  const fileUri = searchParams?.get("fileUri") ?? "";
   const fileName = searchParams?.get("fileName") ?? "";
+  const accessToken = searchParams?.get("ac") ?? "";
+  const platform = searchParams?.get("platform") ?? "";
 
   const dataURLtoFile = (dataurl: string, fileName: string) => {
     const arr = dataurl.split(",");
@@ -40,21 +43,30 @@ export default function SpecSend() {
 
   useEffect(() => {
     if (!specPostReq) return;
-    postData(JSON.parse(specPostReq), fileBase64, fileName);
+    if (!accessToken) {
+      alert("세션이 만료되었습니다.");
+      return;
+    }
+    postData(JSON.parse(specPostReq), fileUri, fileName);
 
     async function postData(
       specPostReq: SpecPostReqBase,
-      fileBase64: string,
+      fileUri: string,
       fileName: string
     ) {
-      alert("fileBase64=" + fileBase64 + " and fileName=" + fileName);
+      alert("specPostReq=" + JSON.stringify(specPostReq));
       const formData = new FormData();
       const blob = new Blob([JSON.stringify(specPostReq)], {
         type: "application/json",
       });
       formData.append("specPostReq", blob);
-      if (fileBase64) {
-        formData.append("documentation", dataURLtoFile(fileBase64, fileName));
+      if (fileUri) {
+        alert("fileUri=" + fileUri + " and fileName=" + fileName);
+        // formData.append("documentation", dataURLtoFile(fileBase64, fileName));
+        const response = await fetch(fileUri);
+        const blobf = await response.blob();
+        alert("blobf=" + JSON.stringify(blobf));
+        formData.append("documentation", blobf);
       }
 
       try {
@@ -63,21 +75,19 @@ export default function SpecSend() {
           body: formData,
           headers: {
             // "Content-Type": "multipart/form-data",
-            Authorization:
-              "Bearer eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InhrcWpzc2xzZWs4MEBuYXZlci5jb20iLCJpYXQiOjE3MTY3MjQ3MzYsImV4cCI6MTcxNjcyNjUzNiwidHlwZSI6ImFjY2VzcyJ9.Qj7BCILySgLYX2atHNORH-TFGx_jW3EwR8oDXQyF2wg",
+            Authorization: `Bearer ${accessToken}`,
           },
         });
-        const json = await res.json();
-        alert("/api/v1/spec " + JSON.stringify(json));
+        alert("/api/v1/spec " + JSON.stringify(res));
 
         // if (window.ReactNativeWebView) {
         //   window.ReactNativeWebView.postMessage("success");
         // }
       } catch (error) {
-        console.error("Error 에러:", error);
+        alert("Error 에러:" + error);
       }
     }
   }, [specPostReq]);
 
-  return <div>hihi</div>;
+  return <div>loading...</div>;
 }
